@@ -14,7 +14,7 @@ class UserService{
             }
             users.forEach((item)=>{
                 const user = new UserDto(item)
-                delete(user.password)
+                // delete(user.password)
                 userDto.push(user)
             })
             return  {warning:false, data: {users: userDto}}
@@ -42,7 +42,7 @@ class UserService{
             const candidate = await UserModel.findOne({username:user.username})
             if(candidate)
                 return {warning:true, message:'Пользователь с таким именем существует'}
-            user.password = bcrypt.hashSync(user.password,7)
+            // user.password = bcrypt.hashSync(user.password,7)
             const newUser = await UserModel.create({...user})
             return {warning:false, data:{user:new UserDto(newUser)}}
         }
@@ -57,7 +57,7 @@ class UserService{
         const user = await UserModel.findById(userId)
         if(!user)
             return {warning:true, message:'Пользователь не найден'}
-        userDto.password = user.password
+        // userDto.password = user.password
         await UserModel.findByIdAndUpdate(userId, userDto)
         return {warning:false, message:' пользователя изменен'}
     }
@@ -69,11 +69,12 @@ class UserService{
 
     async updateUserPassword(userId, newPassword){
         try {
-            const cashPassword = bcrypt.hashSync(newPassword,7)
+            // const cashPassword = bcrypt.hashSync(newPassword,7)
             const user = await UserModel.findById(userId)
             if(!user)
                 return {warning:true, message:'Пользователь не найден'}
-            user.password = cashPassword
+            //user.password = cashPassword
+            user.password = newPassword
             await user.save()
             return {warning:false, message:'Пароль пользователя изменен'}
         }

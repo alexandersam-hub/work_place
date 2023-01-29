@@ -13,7 +13,8 @@ class AuthServices {
                 return {warning: true, message: "Пользователь не найден"}
             if (!user.isActive)
                 return {warning: true, message: "Пользователь заблокирован"}
-            const isPassEquals = bcrypt.compareSync(password, user.password)
+            //const isPassEquals = bcrypt.compareSync(password, user.password)
+            const isPassEquals = password === user.password
             if (isPassEquals) {
                 const userDto = new UserDto(user)
                 const newToken = tokenService.generationToken({...userDto})

@@ -6,6 +6,11 @@ const GameModel = new Schema({
     countTeams:{type:Number},
     countRound:{type:Number},
     map:{type:Map},
+    roundPairScoreWin:{type:Number},
+    roundPairScoreLose:{type:Number},
+    roundPairScoreNone:{type:Number},
+    roundAloneScoreWin:{type:Number},
+    roundAloneScoreLose:{type:Number},
     locations:{type:[String]},
     isActive:{type:String, default:true},
 

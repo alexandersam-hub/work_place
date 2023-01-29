@@ -7,6 +7,7 @@ class GameController{
         try{
             const {game} = req.body
             if(game){
+
                 const result = await GameService.createGame(game)
                 return res.json(result)
             }else

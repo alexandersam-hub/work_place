@@ -12,7 +12,7 @@ class UserDto{
     constructor(model) {
         this.id = model.id?model.id.toString():''
         this.username = model.username;
-        // this.password = model.password;
+        this.password = model.password;
         this.stringName = model.stringName
         this.role = model.role;
         this.isActive = model.isActive;

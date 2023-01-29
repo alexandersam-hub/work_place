@@ -14,12 +14,6 @@ class GameSocket{
     games = {}
     currentGame = {}
 
-    pairWinner = 3
-    pairLose = 0
-    pairNone = 1
-    aloneWinner = 2
-    aloneLose = 0
-
     async init(server, isLocalServer) {
         try {
             if (isLocalServer)
@@ -45,28 +39,44 @@ class GameSocket{
 
                             user = this.usersStore.find(u=>u.id === userToken.id)
                             if (user) {
-                                // console.log(user)
                                 if (user.role === 'admin')
                                     return ws.send(JSON.stringify({
                                         warning: false, games:this.gamesStore,
                                         action: 'login', user: user}))
-                                else
-                                    return ws.send(JSON.stringify({warning: false,  games:this.gamesStore, user, map: this.users[user.id],action: 'login', data: user}))
+                                else {
+                                    return ws.send(JSON.stringify({
+                                        warning: false,
+                                        games: this.gamesStore,
+                                        user,
+                                        map: this.users[user.id],
+                                        action: 'login',
+                                        data: user
+                                    }))
+
+                                }
+
                             }
                             else
                                 return ws.send(JSON.stringify({warning:true,action:'login', message:'bad token'}))
 
                         case 'start':
                             game = messageData.gameId
-                            if (!this.currentGame[game])
+                            const g = this.games[game]
+                            if (!this.currentGame[game]){
                                 this.currentGame[game] = {
                                     adminsSockets: [],
                                     usersSockets: [],
+                                    pairWinner :  g.roundPairScoreWin,
+                                    pairLose : g.roundPairScoreLose,
+                                    pairNone: g.roundPairScoreNone,
+                                    aloneWinner: g.roundAloneScoreWin,
+                                    aloneLose : g.roundAloneScoreLose,
                                     chat:[],
-                                    game: this.gamesStore.find(g => g.id === game),
+                                    game: g,
                                     scores: {},
                                     logs: []
                                 }
+                            }
 
                             if (user.role === 'admin')
                                 this.currentGame[game].adminsSockets.push({ws:ws,user:user})
@@ -82,23 +92,29 @@ class GameSocket{
                             const deReport = log.report
                             if (deReport.typeTask === 'double'){
                                 if (deReport.status === 'winner'){
-                                    this.currentGame[game].scores[deReport.teamWinner].score -= this.pairWinner
-                                    this.currentGame[game].scores[deReport.teamLose].score -=  this.pairLose
-                                    this.currentGame[game].scores[deReport.teamWinner][deReport.round].splice(this.currentGame[game].scores[deReport.teamWinner][deReport.round].indexOf(this.pairWinner),1)
-                                    this.currentGame[game].scores[deReport.teamLose][deReport.round].splice(this.currentGame[game].scores[deReport.teamLose][deReport.round].indexOf(this.pairLose),1)
+                                    this.currentGame[game].scores[deReport.teamWinner].score -=  this.currentGame[game].pairWinner
+                                    this.currentGame[game].scores[deReport.teamLose].score -=   this.currentGame[game].pairLose
+                                    this.currentGame[game].scores[deReport.teamWinner][deReport.round].splice(this.currentGame[game].scores[deReport.teamWinner][deReport.round].indexOf( this.currentGame[game].pairWinner),1)
+                                    this.currentGame[game].scores[deReport.teamLose][deReport.round].splice(this.currentGame[game].scores[deReport.teamLose][deReport.round].indexOf( this.currentGame[game].pairLose),1)
+                                }else if(deReport.status === 'none'){
+                                    this.currentGame[game].scores[deReport.team1].score -=  this.currentGame[game].pairNone
+                                    this.currentGame[game].scores[deReport.team2].score -=   this.currentGame[game].pairNone
+                                    this.currentGame[game].scores[deReport.team1][deReport.round].splice(this.currentGame[game].scores[deReport.team1][deReport.round].indexOf( this.currentGame[game].pairNone),1)
+                                    this.currentGame[game].scores[deReport.team2][deReport.round].splice(this.currentGame[game].scores[deReport.team2][deReport.round].indexOf( this.currentGame[game].pairNone),1)
                                 }else{
-                                    this.currentGame[game].scores[deReport.team1].score -= this.pairNone
-                                    this.currentGame[game].scores[deReport.team2].score -=  this.pairNone
-                                    this.currentGame[game].scores[deReport.team1][deReport.round].splice(this.currentGame[game].scores[deReport.team1][deReport.round].indexOf(this.pairNone),1)
-                                    this.currentGame[game].scores[deReport.team2][deReport.round].splice(this.currentGame[game].scores[deReport.team2][deReport.round].indexOf(this.pairNone),1)
+                                    this.currentGame[game].scores[deReport.team1].score -=  this.currentGame[game].pairLose
+                                    this.currentGame[game].scores[deReport.team2].score -=   this.currentGame[game].pairLose
+                                    this.currentGame[game].scores[deReport.team1][deReport.round].splice(this.currentGame[game].scores[deReport.team1][deReport.round].indexOf( this.currentGame[game].pairLose),1)
+                                    this.currentGame[game].scores[deReport.team2][deReport.round].splice(this.currentGame[game].scores[deReport.team2][deReport.round].indexOf( this.currentGame[game].pairLose),1)
+
                                 }
                             }    else if (deReport.typeTask === 'alone'){
                                     if (deReport.status === 'winner'){
-                                        this.currentGame[game].scores[deReport.team].score -=  this.aloneWinner
-                                        this.currentGame[game].scores[deReport.team][deReport.round].splice(this.currentGame[game].scores[deReport.team][deReport.round].indexOf(this.aloneWinner),1)
+                                        this.currentGame[game].scores[deReport.team].score -=   this.currentGame[game].aloneWinner
+                                        this.currentGame[game].scores[deReport.team][deReport.round].splice(this.currentGame[game].scores[deReport.team][deReport.round].indexOf( this.currentGame[game].aloneWinner),1)
                                     }else{
-                                        this.currentGame[game].scores[deReport.team].score -=  this.aloneLose
-                                        this.currentGame[game].scores[deReport.team][deReport.round].splice(this.currentGame[game].scores[deReport.team][deReport.round].indexOf(this.aloneLose),1)
+                                        this.currentGame[game].scores[deReport.team].score -=   this.currentGame[game].aloneLose
+                                        this.currentGame[game].scores[deReport.team][deReport.round].splice(this.currentGame[game].scores[deReport.team][deReport.round].indexOf( this.currentGame[game].aloneLose),1)
 
                                     }
 
@@ -107,7 +123,6 @@ class GameSocket{
                             return this.sendCategoryInfoGame( this.currentGame[game].adminsSockets,  this.currentGame[game])
                         case 'report':
                             const report = messageData.report
-                            console.log('!report', report)
                             this.currentGame[game].logs.push({date:Date.now(), user, report, isActive:true})
                             if (report.typeTask === 'double'){
                                 if (report.status === 'winner'){
@@ -121,15 +136,35 @@ class GameSocket{
                                     if (!  this.currentGame[game].scores[report.teamLose][report.round])
                                         this.currentGame[game].scores[report.teamLose][report.round] = []
 
-                                    this.currentGame[game].scores[report.teamWinner][report.round].push(this.pairWinner)
-                                    this.currentGame[game].scores[report.teamLose][report.round].push(this.pairLose)
+                                    this.currentGame[game].scores[report.teamWinner][report.round].push(  this.currentGame[game].pairWinner)
+                                    this.currentGame[game].scores[report.teamLose][report.round].push( this.currentGame[game].pairLose)
 
                                     if (! this.currentGame[game].scores[report.teamWinner].score)
                                         this.currentGame[game].scores[report.teamWinner].score = 0
                                     if (! this.currentGame[game].scores[report.teamWinner].score)
                                         this.currentGame[game].scores[report.teamLose].score = 0
-                                    this.currentGame[game].scores[report.teamWinner].score +=  this.pairWinner
-                                    this.currentGame[game].scores[report.teamLose].score +=  this.pairLose
+                                    this.currentGame[game].scores[report.teamWinner].score +=   this.currentGame[game].pairWinner
+                                    this.currentGame[game].scores[report.teamLose].score +=   this.currentGame[game].pairLose
+                                }else if(report.status === 'none'){
+                                    if (!  this.currentGame[game].scores[report.team1])
+                                        this.currentGame[game].scores[report.team1] = {}
+                                    if (!  this.currentGame[game].scores[report.team2])
+                                        this.currentGame[game].scores[report.team2] = {}
+                                    if (! this.currentGame[game].scores[report.team1][report.round])
+                                        this.currentGame[game].scores[report.team1][report.round] = []
+                                    if(!  this.currentGame[game].scores[report.team2][report.round])
+                                        this.currentGame[game].scores[report.team2][report.round] = []
+
+                                    this.currentGame[game].scores[report.team1][report.round].push( this.currentGame[game].pairNone)
+                                    this.currentGame[game].scores[report.team2][report.round].push( this.currentGame[game].pairNone)
+
+                                    if(!this.currentGame[game].scores[report.team1].score)
+                                        this.currentGame[game].scores[report.team1].score = 0
+                                    if(!this.currentGame[game].scores[report.team2].score)
+                                        this.currentGame[game].scores[report.team2].score = 0
+
+                                    this.currentGame[game].scores[report.team1].score +=  this.currentGame[game].pairNone
+                                    this.currentGame[game].scores[report.team2].score +=  this.currentGame[game].pairNone
                                 }else{
                                     if (!  this.currentGame[game].scores[report.team1])
                                         this.currentGame[game].scores[report.team1] = {}
@@ -140,16 +175,16 @@ class GameSocket{
                                     if(!  this.currentGame[game].scores[report.team2][report.round])
                                         this.currentGame[game].scores[report.team2][report.round] = []
 
-                                    this.currentGame[game].scores[report.team1][report.round].push(this.pairNone)
-                                    this.currentGame[game].scores[report.team2][report.round].push(this.pairNone)
+                                    this.currentGame[game].scores[report.team1][report.round].push( this.currentGame[game].pairLose)
+                                    this.currentGame[game].scores[report.team2][report.round].push( this.currentGame[game].pairLose)
 
                                     if(!this.currentGame[game].scores[report.team1].score)
                                         this.currentGame[game].scores[report.team1].score = 0
                                     if(!this.currentGame[game].scores[report.team2].score)
                                         this.currentGame[game].scores[report.team2].score = 0
 
-                                    this.currentGame[game].scores[report.team1].score += this.pairNone
-                                    this.currentGame[game].scores[report.team2].score +=this.pairNone
+                                    this.currentGame[game].scores[report.team1].score +=  this.currentGame[game].pairLose
+                                    this.currentGame[game].scores[report.team2].score +=  this.currentGame[game].pairLose
                                 }
                             }
                             else if (report.typeTask === 'alone'){
@@ -158,10 +193,10 @@ class GameSocket{
                                     if (! this.currentGame[game].scores[report.team][report.round])
                                         this.currentGame[game].scores[report.team][report.round] = []
 
-                                    this.currentGame[game].scores[report.team][report.round].push(report.status === 'winner'?this.aloneWinner:this.aloneLose)
+                                    this.currentGame[game].scores[report.team][report.round].push(report.status === 'winner'? this.currentGame[game].aloneWinner: this.currentGame[game].aloneLose)
                                     if(!this.currentGame[game].scores[report.team].score)
                                         this.currentGame[game].scores[report.team].score = 0
-                                    this.currentGame[game].scores[report.team].score +=  report.status === 'winner'?this.aloneWinner:this.aloneLose
+                                    this.currentGame[game].scores[report.team].score +=  report.status === 'winner'? this.currentGame[game].aloneWinner: this.currentGame[game].aloneLose
                                 }
                             this.sendInfoGame(ws, this.currentGame[game])
                             return this.sendCategoryInfoGame( this.currentGame[game].adminsSockets,  this.currentGame[game])
@@ -172,14 +207,23 @@ class GameSocket{
                             break
                         case 'reset':
                             await this.restoreData()
+
+                            const ga = this.games[messageData.gameId]
                             this.currentGame[messageData.gameId] = {
+
                                 adminsSockets: this.currentGame[messageData.gameId] && this.currentGame[messageData.gameId].adminsSockets?this.currentGame[messageData.gameId].adminsSockets:[],
                                 usersSockets: this.currentGame[messageData.gameId] && this.currentGame[messageData.gameId].usersSockets?this.currentGame[messageData.gameId].usersSockets:[],
-                                game: this.gamesStore.find(g => g.id === game),
+                                game: ga,
+                                pairWinner :  ga.roundPairScoreWin,
+                                pairLose : ga.roundPairScoreLose,
+                                pairNone: ga.roundPairScoreNone,
+                                aloneWinner: ga.roundAloneScoreWin,
+                                aloneLose : ga.roundAloneScoreLose,
                                 chat: [],
                                 scores: {},
                                 logs: []
                             }
+
                             this.sendCategoryInfoGame( this.currentGame[messageData.gameId].adminsSockets,  this.currentGame[messageData.gameId])
                             this.sendCategoryInfoGame( this.currentGame[messageData.gameId].usersSockets,  this.currentGame[messageData.gameId])
                             break
@@ -215,15 +259,16 @@ class GameSocket{
         if(!resultUsers.warning)
             this.usersStore = resultUsers.data.users
 
-        this.confirmData()
+       await this.confirmData()
     }
 
-    confirmData(){
+    async confirmData(){
         this.gamesStore.forEach(game=>{
+
             this.games[game.id] = {...game}
-            this.usersStore.forEach(user=>{
+            this.usersStore.forEach(async (user)=>{
                 if (user.role === 'user'){
-                    const map = this.getMapByUserIdAndGameId(game, user.id)
+                    const map = await this.getMapByUserIdAndGameId(game, user.id)
                     if (map.length>0){
                         if(!this.users[user.id])
                             this.users[user.id] = {}
@@ -244,14 +289,12 @@ class GameSocket{
             }
             this.games[game.id].locations = locations
         })
-        // console.log(this.users)
     }
 
-    getMapByUserIdAndGameId(game, userId){
+    async getMapByUserIdAndGameId(game, userId){
         const mapList = []
+        let isAlone = true
         try {
-
-
             if (!game['map'])
                 return mapList
             for (let i of game['map']) {
@@ -260,6 +303,8 @@ class GameSocket{
                     for (let idLoc of loc) {
                         if (loc !== 'none') {
                             const location = this.locationsStore.find(l => l.id === idLoc)
+                            if (isAlone && location && location.type === 'alone')
+                                isAlone = false
                             if (location && location.user && location.user === userId)
                                 mapList.push({round: count, team: i[0], location})
                         }
@@ -270,16 +315,18 @@ class GameSocket{
             if (mapList.length === 0)
                 return []
             mapList.sort((a, b) => a.round - b.round)
-            // console.log('mapList', mapList)
+            const add = isAlone?2:4
             if (mapList[0].location.type === 'double') {
                 const newMapList = []
-                for (let i = 0; i < mapList.length; i = i + 4   ) {
-                    if (mapList[i] && mapList[i+1] && mapList[i].round === mapList[i + 1].round) {
+                for (let i = 0; i < mapList.length; i = i + add) {
+                    if ((!isAlone && mapList[i] && mapList[i+1] && mapList[i].round === mapList[i + 1].round)||(isAlone  && mapList[i] && mapList[i+1] )) {
                         newMapList.push({
                             round: mapList[i].round,
                             team1: mapList[i].team,
                             team2: mapList[i + 1].team,
-                            location: mapList[i].location
+                            location: mapList[i].location,
+                            isAlone:isAlone
+
                         })
                     } else {
                         newMapList.push(mapList[i])
