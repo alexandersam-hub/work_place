@@ -208,7 +208,7 @@ class GameSocket{
                         case 'reset':
                             await this.restoreData()
 
-                            const ga = this.games[messageData.gameId]
+                            const ga =messageData.gameId
                             this.currentGame[messageData.gameId] = {
 
                                 adminsSockets: this.currentGame[messageData.gameId] && this.currentGame[messageData.gameId].adminsSockets?this.currentGame[messageData.gameId].adminsSockets:[],
@@ -314,6 +314,7 @@ class GameSocket{
             }
             if (mapList.length === 0)
                 return []
+            // console.log(mapList)
             mapList.sort((a, b) => a.round - b.round)
             const add = isAlone?2:4
             if (mapList[0].location.type === 'double') {
