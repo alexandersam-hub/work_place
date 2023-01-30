@@ -207,8 +207,7 @@ class GameSocket{
                             break
                         case 'reset':
                             await this.restoreData()
-
-                            const ga =messageData.gameId
+                            const ga = this.games[game]
                             this.currentGame[messageData.gameId] = {
 
                                 adminsSockets: this.currentGame[messageData.gameId] && this.currentGame[messageData.gameId].adminsSockets?this.currentGame[messageData.gameId].adminsSockets:[],
@@ -223,6 +222,23 @@ class GameSocket{
                                 scores: {},
                                 logs: []
                             }
+
+                            // const g = this.games[game]
+                            // if (!this.currentGame[game]){
+                            //     this.currentGame[game] = {
+                            //         adminsSockets: [],
+                            //         usersSockets: [],
+                            //         pairWinner :  g.roundPairScoreWin,
+                            //         pairLose : g.roundPairScoreLose,
+                            //         pairNone: g.roundPairScoreNone,
+                            //         aloneWinner: g.roundAloneScoreWin,
+                            //         aloneLose : g.roundAloneScoreLose,
+                            //         chat:[],
+                            //         game: g,
+                            //         scores: {},
+                            //         logs: []
+                            //     }
+                            // }
 
                             this.sendCategoryInfoGame( this.currentGame[messageData.gameId].adminsSockets,  this.currentGame[messageData.gameId])
                             this.sendCategoryInfoGame( this.currentGame[messageData.gameId].usersSockets,  this.currentGame[messageData.gameId])
